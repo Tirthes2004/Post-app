@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Posts{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr"
+      crossorigin="anonymous"
+    />
+    {% block styles %}{% endblock %}
+  </head>
+  <body>
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <div class="container-fluid">
+
+    <!-- Brand -->
+    <a class="navbar-brand fw-bold" href="{% url 'tweet_list' %}">
+      POSTS
+    </a>
+
+    <!-- Hamburger toggler -->
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#mainNavbar"
+      aria-controls="mainNavbar"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="mainNavbar">
+
+      <!-- (1) Search only on lg+ screens, absolute-centered -->
+      <form
+        method="get"
+        action="{% url 'tweet_list' %}"
+        class="d-none d-lg-flex position-absolute start-50 translate-middle-x"
+        style="width:300px;"
+      >
+        <input
+          class="form-control me-2"
+          type="search"
+          name="q"
+          value="{{ q|default:'' }}"
+          placeholder="Search by username…"
+          aria-label="Search"
+        />
+        <button class="btn btn-outline-success" type="submit">Search</button>
+      </form>
+
+      <!-- (2) Fallback search inside collapse on sm/md -->
+      <form
+        method="get"
+        action="{% url 'tweet_list' %}"
+        class="d-flex d-lg-none my-2"
+      >
+        <input
+          class="form-control me-2"
+          type="search"
+          name="q"
+          value="{{ q|default:'' }}"
+          placeholder="Search by username…"
+          aria-label="Search"
+        />
+        <button class="btn btn-outline-success" type="submit">Search</button>
+      </form>
+
+      <!-- (3) Spacer to push auth to right on large screens -->
+      <div class="flex-grow-1 d-none d-lg-block"></div>
+
+      <!-- (4) Auth links -->
+      <ul class="navbar-nav ms-auto flex-row gap-2">
+        {% if user.is_authenticated %}
+          {% if request.resolver_match.view_name == "profile" %}
+            <li class="nav-item">
+              <a class="btn btn-outline-light" href="{% url 'tweet_list' %}">Home</a>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="btn btn-outline-light" href="{% url 'profile' %}">My Profile</a>
+            </li>
+          {% endif %}
+          <li class="nav-item">
+            <a class="btn btn-outline-danger" href="{% url 'logout' %}">Logout</a>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="btn btn-outline-success" href="{% url 'login' %}">Login</a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-outline-success" href="{% url 'register' %}">Register</a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container justify-content-center text-center mt-4">
+  {% block content %}{% endblock %}
+</div>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+  crossorigin="anonymous"
+></script>
+</body>
+</html>

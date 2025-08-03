@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+  <h2 class="text-center mb-4">Welcome, {{ user.username }}! 👋</h2>
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+    {% for tweet in tweets %}
+      <div class="col d-flex justify-content-center">
+        <div class="card p-3" style="width: 18rem;">
+          {% if tweet.image %}
+            <img src="{{ tweet.image.url }}" class="rounded card-img-top" style="height: 200px; object-fit: cover;" alt="Tweet image">
+          {% endif %}
+          <div class="card-body text-center">
+            <p class="card-text">{{ tweet.content }}</p>
+            <a href="{% url 'tweet_edit' tweet.id %}" class="btn btn-primary">Edit Post</a>
+            <a href="{% url 'tweet_delete' tweet.id %}" class="btn btn-danger">Delete Post</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <h5 class="text-center">You haven't posted anything yet!</h5>
+    {% endfor %}
+  </div>
+{% endblock %}

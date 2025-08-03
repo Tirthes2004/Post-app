@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="card p-4 shadow" style="width: 100%; max-width: 400px;">
+
+    {% if step == 'signup' %}
+      <h2 class="text-center mb-4">Create an Account</h2>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          {{ form.username|add_class:"form-control" }}
+          {{ form.username.errors }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          {{ form.email|add_class:"form-control" }}
+          {{ form.email.errors }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          {{ form.password|add_class:"form-control" }}
+          {{ form.password.errors }}
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">Confirm Password</label>
+          {{ form.password2|add_class:"form-control" }}
+          {{ form.password2.errors }}
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Register</button>
+      </form>
+
+      <p class="text-center mt-3">
+        Already have an account? <a href="{% url 'login' %}">Login here</a>
+      </p>
+
+    {% elif step == 'verify' %}
+      <h2 class="text-center mb-4">Verify Your Email</h2>
+      <p class="text-center">We've sent a 6-digit code to <strong>{{ form.initial.email }}</strong>.</p>
+
+      <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {{ form.email }} {# Hidden input to preserve email #}
+
+        <div class="mb-3">
+          <label class="form-label">OTP</label>
+          {{ form.otp|add_class:"form-control" }}
+          {{ form.otp.errors }}
+        </div>
+
+        <button type="submit" class="btn btn-success w-100">Verify & Finish</button>
+      </form>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

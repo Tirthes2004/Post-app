@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+
+
+{% block title %}Post List{% endblock %}
+
+{% block content %}
+<h1 class="text-center"><strong>POSTS</strong></h1>
+
+{% if user.is_authenticated %}
+  <h2 class="text-center">Welcome, {{ user.username }}</h2>
+{% endif %}
+
+<div class="text-center mb-4">
+  <a href="{% url 'tweet_create' %}" class="btn btn-primary">Create Post</a>
+</div>
+
+
+<div class="container">
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+    {% for tweet in tweets %}
+      <div class="col d-flex justify-content-center">
+        <div class="card p-3" style="width: 20rem">
+          {% if tweet.image %}
+            <img
+              src="{{ tweet.image.url }}"
+              class="rounded card-img-top"
+              style="height: 200px; object-fit: cover"
+              alt="Tweet image"
+            />
+          {% else %}
+            <div
+              class="card-img-top d-flex align-items-center justify-content-center bg-light text-muted"
+              style="height: 200px"
+            >
+              No Image
+            </div>
+          {% endif %}
+
+          <div class="card-body text-center">
+            <h5 class="card-title">{{ tweet.user.username }}</h5>
+
+            <p class="card-text" id="tweet-content-{{ tweet.id }}" data-url="{% url 'view_comments' tweet.id %}">
+  {{ tweet.content }}
+</p>
+
+<a
+  href="javascript:void(0)"
+  class="see-more-link text-primary d-none"
+  id="see-more-{{ tweet.id }}"
+>
+  ...see more
+</a>
+
+
+            <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
+              <button
+                class="btn btn-sm btn-outline-primary like-btn"
+                data-id="{{ tweet.id }}"
+              >
+                👍 <span class="likes-count">{{ tweet.likes.count }}</span>
+              </button>
+              <a href="{% url 'view_comments' tweet.id %}" class="btn btn-sm btn-secondary">
+                See Comments ({{ tweet.comments.count }})
+              </a>
+            </div>
+
+            <form class="comment-form d-flex mb-2" data-id="{{ tweet.id }}">
+              {% csrf_token %}
+              <input
+                type="text"
+                name="content"
+                class="form-control form-control-sm me-2"
+                placeholder="Write a comment…"
+                required
+              />
+              <button type="submit" class="btn btn-sm btn-primary">Post</button>
+            </form>
+
+            {% if user.is_authenticated and tweet.user == user %}
+              <div class="d-flex justify-content-center gap-2">
+                <a href="{% url 'tweet_edit' tweet.id %}" class="btn btn-primary btn-sm">Edit</a>
+                <form method="POST" action="{% url 'tweet_delete' tweet.id %}" class="d-inline delete-form">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+
+
+// 1) Expose authentication state + login redirect
+const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+const loginUrl = "{% url 'login' %}?next={{ request.path }}";
+
+document.addEventListener("DOMContentLoaded", () => {
+  // 2) Guard the "like" buttons
+  document.querySelectorAll(".like-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (!isAuthenticated) {
+        window.location.href = loginUrl;
+        return;
+      }
+      // … your existing like-toggle fetch here …
+    });
+  });
+
+  // 3) Guard comment submission
+  document.querySelectorAll(".comment-form").forEach(form => {
+    form.addEventListener("submit", e => {
+      if (!isAuthenticated) {
+        window.location.href = loginUrl;
+        return;
+      }
+      e.preventDefault();
+      // … your existing AJAX comment post here …
+    });
+  });
+
+  // … the rest of your existing script (see-more, delete-confirm, etc.) …
+});
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  // For each tweet paragraph…
+  document.querySelectorAll(".card-text").forEach(p => {
+    const fullText = p.textContent.trim();
+    // detect if this card has edit/delete controls
+    const hasControls = !!p.closest(".card-body")
+                          .querySelector(".delete-form");
+    // choose max chars (~1.5 vs ~2.5 lines)
+    const maxChars = hasControls ? 60 : 90;
+
+    if (fullText.length > maxChars) {
+      const truncated = fullText.slice(0, maxChars).trimEnd();
+      p.innerHTML = `
+        ${truncated}
+        <a href="${p.dataset.url}"
+           class="text-primary"
+           style="text-decoration:none;"
+        >…see more</a>`;
+    }
+  });
+});
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  // CSRF helper
+  function getCookie(name) {
+    let cookieValue = null;
+    document.cookie.split(";").forEach(c => {
+      c = c.trim();
+      if (c.startsWith(name + "=")) {
+        cookieValue = decodeURIComponent(c.slice(name.length + 1));
+      }
+    });
+    return cookieValue;
+  }
+  const csrftoken = getCookie("csrftoken");
+
+  // 1) Like toggle
+  document.querySelectorAll(".like-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tweetId = btn.dataset.id;
+      fetch(`/like-toggle/${tweetId}/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrftoken },
+      })
+      .then(res => res.json())
+      .then(data => {
+        btn.querySelector(".likes-count").textContent = data.likes_count;
+        btn.classList.toggle("active", data.status === "liked");
+      })
+      .catch(console.error);
+    });
+  });
+
+  // 2) Delete confirmation
+  document.querySelectorAll(".delete-form").forEach(form => {
+    form.addEventListener("submit", e => {
+      if (!confirm("Are you sure you want to delete this post?")) {
+        e.preventDefault();
+      }
+    });
+  });
+
+  // 3) AJAX comment post + counter bump
+  document.querySelectorAll(".comment-form").forEach(form => {
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const tweetId = form.dataset.id;
+      const input   = form.querySelector('input[name="content"]');
+      const content = input.value.trim();
+      if (!content) return;
+
+      const formData = new FormData();
+      formData.append("content", content);
+
+      fetch(`/comment-add/${tweetId}/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrftoken },
+        body: formData,
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.id) {
+          input.value = "";
+          // bump the correct See Comments link
+          const seeBtn = form.parentElement.querySelector("a.btn-secondary");
+          const oldNum = parseInt(seeBtn.textContent.match(/\d+/)) || 0;
+          seeBtn.textContent = `See Comments (${oldNum + 1})`;
+        } else {
+          alert("Error: " + JSON.stringify(data.errors));
+        }
+      })
+      .catch(console.error);
+    });
+  });
+
+  // 4) Show "...see more" if the paragraph overflows, and bind redirect
+  document.querySelectorAll('.card-text.truncated').forEach(p => {
+    const lineHeight = parseFloat(getComputedStyle(p).lineHeight);
+    const maxLines   = p.classList.contains('truncate-short') ? 2 : 3;
+    const maxHeight  = lineHeight * maxLines;
+
+    if (p.scrollHeight > maxHeight + 2) {
+      const id   = p.id.split('-').pop();
+      const link = document.getElementById(`see-more-${id}`);
+      link.classList.remove('d-none');
+      link.addEventListener('click', () => {
+        window.location.href = p.dataset.url;
+      });
+    }
+  });
+});
+</script>
+
+
+{% endblock %}
