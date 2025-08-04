@@ -58,7 +58,7 @@ def user_register(request):
                 send_mail(
                     subject='Your OTP Code',
                     message=f'Your OTP is {otp}',
-                    from_email='tirthessamanta03@gmail.com',
+                    from_email='p06099124@gmail.com',
                     recipient_list=[email],
                 )
 
