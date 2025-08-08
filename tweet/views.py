@@ -15,25 +15,47 @@ import os
 from django.shortcuts import render
 from .models import Tweet
 
+# def tweet_list(request):
+#     # grab the raw search term (or empty string)
+    # q = request.GET.get('q', '').strip()
+
+    # if q:
+    #     # filter tweets whose author’s username contains q (case-insensitive)
+    #     tweets = (
+    #         Tweet.objects
+    #              .filter(user__username__icontains=q)
+    #              .order_by('-created_at')
+    #     )
+    # else:
+    #     # no search → show all
+    #     tweets = Tweet.objects.all().order_by('-created_at')
+
+    # return render(request, 'tweet_list.html', {
+    #     'tweets': tweets,
+    #     'q': q,    # so we can prefill the search box
+    # })
+
+
+@login_required
 def tweet_list(request):
-    # grab the raw search term (or empty string)
     q = request.GET.get('q', '').strip()
 
     if q:
-        # filter tweets whose author’s username contains q (case-insensitive)
-        tweets = (
-            Tweet.objects
-                 .filter(user__username__icontains=q)
-                 .order_by('-created_at')
-        )
+        tweets = Tweet.objects.filter(user__username__icontains=q).order_by('-created_at')
     else:
-        # no search → show all
         tweets = Tweet.objects.all().order_by('-created_at')
+
+    liked_ids = set(
+        Like.objects.filter(user=request.user, tweet__in=tweets)
+                    .values_list('tweet_id', flat=True)
+    )
 
     return render(request, 'tweet_list.html', {
         'tweets': tweets,
-        'q': q,    # so we can prefill the search box
+        'liked_ids': liked_ids,
+        'q': q,
     })
+
 
 
 @login_required
@@ -118,10 +140,25 @@ def add_comment(request, tweet_id):
 
 
 def view_comments(request, tweet_id):
-    tweet    = get_object_or_404(Tweet, id=tweet_id)
-    comments = tweet.comments.order_by('created_at')
-    return render(request, 'comment.html', {'tweet': tweet, 'comments': comments})
+    tweet = get_object_or_404(Tweet, id=tweet_id)
 
+    # all commenter usernames (may include users who also liked)
+    commenters = (
+        tweet.comments
+             .values_list('user__username', flat=True)
+             .distinct()
+    )
+
+    # all liker usernames (may include users who also commented)
+    likers = tweet.likes.values_list('user__username', flat=True)
+
+
+    return render(request, 'comment.html', {
+        'tweet': tweet,
+        'comments': tweet.comments.order_by('created_at'),
+        'commenters': sorted(commenters),
+        'likers':    sorted(likers),
+    })
 
 @login_required
 def edit_comment(request, comment_id):

@@ -3,7 +3,6 @@
 
 
 {% block title %}Post List{% endblock %}
-
 {% block content %}
 <h1 class="text-center"><strong>POSTS</strong></h1>
 
@@ -54,12 +53,22 @@
 
 
             <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
-              <button
+              {% comment %} <button
                 class="btn btn-sm btn-outline-primary like-btn"
                 data-id="{{ tweet.id }}"
               >
                 👍 <span class="likes-count">{{ tweet.likes.count }}</span>
-              </button>
+              </button> {% endcomment %}
+{# tweet_list.html / tweet_detail.html #}
+<button
+    id="like-btn-{{ tweet.id }}"
+    class="btn like-btn {% if tweet.id in liked_ids %}liked{% endif %}"
+    data-tweet-id="{{ tweet.id }}"
+  >
+    👍 <span class="count">{{ tweet.likes.count }}</span>
+  </button>
+
+
               <a href="{% url 'view_comments' tweet.id %}" class="btn btn-sm btn-secondary">
                 See Comments ({{ tweet.comments.count }})
               </a>
@@ -168,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const csrftoken = getCookie("csrftoken");
 
   // 1) Like toggle
-  document.querySelectorAll(".like-btn").forEach(btn => {
+  {% comment %} document.querySelectorAll(".like-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const tweetId = btn.dataset.id;
       fetch(`/like-toggle/${tweetId}/`, {
@@ -182,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .catch(console.error);
     });
-  });
+  }); {% endcomment %}
 
   // 2) Delete confirmation
   document.querySelectorAll(".delete-form").forEach(form => {
@@ -242,7 +251,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.like-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tweetId = btn.dataset.tweetId;
+      const res     = await fetch(`/like-toggle/${tweetId}/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'Accept': 'application/json',
+        },
+      });
+      const data = await res.json();
+
+      // update the count
+      btn.querySelector('.count').textContent = data.likes_count;
+
+      // toggle the CSS class
+      if (data.status === 'liked') {
+        btn.classList.add('liked');
+      } else {
+        btn.classList.remove('liked');
+      }
+    });
+  });
+});
 </script>
+
 
 
 {% endblock %}

@@ -1,141 +1,109 @@
-{% extends "base.html" %}
-{% block title %}Comments{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="container my-4">
-  <!-- Back to posts -->
-  <a href="{% url 'tweet_list' %}" class="btn btn-sm btn-secondary mb-3">← Back to Posts</a>
+  <div class="container my-4">
 
-  <h3>Comments on {{ tweet.user.username }}’s Post</h3>
-  <div class="col d-flex justify-content-center mb-3">
-  <div class="card p-3" style="width: 20rem">
-    {% if tweet.image %}
-      <img src="{{ tweet.image.url }}" class="card-img-top" style="height:200px;object-fit:cover;">
-    {% endif %}
-    <div class="card-body">
-      <p class="card-text">{{ tweet.content }}</p>
+    {# --- Preview of the Post Being Viewed --- #}
+    <div class="row justify-content-center mb-4">
+      
+        <div class="card p-3" style="width: 20rem">
+          {% if tweet.image %}
+            <img
+              src="{{ tweet.image.url }}"
+              class="card-img-top rounded"
+              style="height: 200px; object-fit: cover"
+              alt="Tweet image"
+            />
+          {% endif %}
+          <div class="card-body text-center">
+            <h5 class="card-title">{{ tweet.user.username }}</h5>
+            <p class="card-text">{{ tweet.content }}</p>
+            <small class="text-muted">
+              Posted on {{ tweet.created_at|date:"Y-m-d H:i" }}
+            </small>
+          </div>
+        </div>
+      
+    </div>
+
+    {# --- Mobile: Likes Dropdown --- #}
+    <div class="d-lg-none row justify-content-center mb-3">
+      <div class="col-auto text-center">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#likesCollapse"
+          aria-expanded="false"
+          aria-controls="likesCollapse"
+        >
+          👍 Likes ({{ likers|length }})
+        </button>
+        <div class="collapse mt-2" id="likesCollapse">
+          <ul class="list-group">
+            {% for username in likers %}
+              <li class="list-group-item">{{ username }}</li>
+            {% empty %}
+              <li class="list-group-item text-muted">No likes yet</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    {# --- Desktop & Tablet: Comments & Likes Side-by-Side --- #}
+    <div class="row justify-content-center">
+      {# Comments Column #}
+      <div class="col-12 col-lg-8 mb-4">
+        <div class="card">
+          <div class="card-header text-center">
+            Comments ({{ comments|length }})
+          </div>
+          <ul class="list-group list-group-flush">
+            {% for c in comments %}
+              <li class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>{{ c.user.username }}</strong>
+                  <small class="text-muted">
+                    {{ c.created_at|date:"Y-m-d H:i" }}
+                  </small>
+                </div>
+                <p class="mb-0">{{ c.content }}</p>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-center text-muted">
+                No comments yet
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      {# Likes Column (visible ≥ lg) #}
+      <div class="d-none d-lg-block col-lg-4 mb-4">
+        <div class="card">
+          <div class="card-header text-center">
+            👍 Likes ({{ likers|length }})
+          </div>
+          <ul class="list-group list-group-flush">
+            {% for username in likers %}
+              <li class="list-group-item">{{ username }}</li>
+            {% empty %}
+              <li class="list-group-item text-muted">No likes yet</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
-  </div>
+{% endblock %}
 
-  <div id="comments-list">
-    {% for c in comments %}
-      <div class="rounded border p-2 mb-2" id="comment-{{ c.id }}">
-        <div class="d-flex justify-content-between align-items-start">
-          <div>
-            <strong>{{ c.user.username }}</strong>
-            <small class="text-muted">{{ c.created_at|date:"M j, H:i" }}</small>
-          </div>
-          {% if c.user == request.user %}
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-info edit-btn" data-id="{{ c.id }}">Edit</button>
-            <button class="btn btn-outline-danger delete-btn" data-id="{{ c.id }}">Delete</button>
-          </div>
-          {% endif %}
-        </div>
-        <p class="content mt-2">{{ c.content }}</p>
-      </div>
-    {% empty %}
-      <p>No comments yet.</p>
-    {% endfor %}
-  </div>
-</div>
-
-<script>
-// --- CSRF helper ---
-function getCookie(name) {
-  let cookieValue = null;
-  document.cookie.split(';').forEach(c => {
-    c = c.trim();
-    if (c.startsWith(name + '=')) {
-      cookieValue = decodeURIComponent(c.slice(name.length + 1));
-    }
-  });
-  return cookieValue;
-}
-const csrftoken = getCookie('csrftoken');
-
-// --- Edit comment handler ---
-document.querySelectorAll('.edit-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const id        = btn.dataset.id;
-    const container = document.getElementById(`comment-${id}`);
-    const p         = container.querySelector('.content');
-    const origText  = p.textContent.trim();
-
-    // Hide the paragraph and disable the edit button
-    p.style.display = 'none';
-    btn.disabled    = true;
-
-    // Create an inline edit form
-    const form = document.createElement('form');
-    form.className = 'd-flex mb-2';
-    form.innerHTML = `
-      <input type="text" name="content"
-             class="form-control form-control-sm me-2"
-             value="${origText.replace(/"/g, '&quot;')}" required>
-      <button type="submit" class="btn btn-sm btn-success me-1">Save</button>
-      <button type="button" class="btn btn-sm btn-secondary cancel-btn">Cancel</button>
-    `;
-    container.appendChild(form);
-
-    // Cancel handler
-    form.querySelector('.cancel-btn').addEventListener('click', () => {
-      form.remove();
-      p.style.display = '';
-      btn.disabled    = false;
-    });
-
-    // Save handler
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const newText = form.querySelector('input[name="content"]').value.trim();
-      if (!newText) return alert('Comment cannot be empty.');
-
-      fetch(`/comment-edit/${id}/`, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': csrftoken,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ content: newText })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.content) {
-          p.textContent    = data.content;
-          form.remove();
-          p.style.display  = '';
-          btn.disabled     = false;
-        } else {
-          alert('Error: ' + JSON.stringify(data.errors));
-        }
-      })
-      .catch(console.error);
-    });
-  });
-});
-
-// --- Delete comment handler ---
-document.querySelectorAll('.delete-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (!confirm('Delete this comment?')) return;
-    const id = btn.dataset.id;
-    fetch(`/comment-delete/${id}/`, {
-      method: 'POST',
-      headers: { 'X-CSRFToken': csrftoken }
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.deleted) {
-        document.getElementById(`comment-${id}`).remove();
-      } else {
-        alert('Failed to delete comment.');
-      }
-    })
-    .catch(console.error);
-  });
-});
-</script>
-
+{% block extra_js %}
+  {# Bootstrap JS for collapse functionality #}
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pPRp+Yk68jniXZ1aHDzJ6kbqnSA3tEw8jjZC1eFHbq/4p1gE/4hw3WsU5QonulpX"
+    crossorigin="anonymous"
+  ></script>
 {% endblock %}

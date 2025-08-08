@@ -30,4 +30,7 @@ urlpatterns = [
     path('comment-edit/<int:comment_id>/',  views.edit_comment,   name='edit_comment'),
     path('comment-delete/<int:comment_id>/',views.delete_comment, name='delete_comment'),
 ]
-
+from django.conf import settings
+from django.conf.urls.static import static
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

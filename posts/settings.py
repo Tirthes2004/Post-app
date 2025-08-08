@@ -26,7 +26,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
 
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = True
+
 SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key')
 ALLOWED_HOSTS = ['*']  # or set to your Railway domain
 
@@ -128,8 +129,8 @@ TIME_ZONE = 'Asia/Kolkata'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+# STATIC_URL = 'static/'
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -137,11 +138,20 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+
+
+# Static
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [ BASE_DIR / 'static' ]         # if you place your own assets here
+STATIC_ROOT = BASE_DIR / 'staticfiles'             # collectstatic will dump here
+
+# Media
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-
-
+MEDIA_ROOT = BASE_DIR / 'media'
 # Email settings
 
 
@@ -150,5 +160,5 @@ EMAIL_HOST       = 'smtp.gmail.com'
 EMAIL_PORT       = 587
 EMAIL_USE_TLS    = True
 EMAIL_HOST_USER  = 'p06099124@gmail.com'
-EMAIL_HOST_PASSWORD = 'mcfn xcar hvtm bagx'
+EMAIL_HOST_PASSWORD = 'gfwu thii gsiz tpmu'
 DEFAULT_FROM_EMAIL  = EMAIL_HOST_USER
