@@ -10,11 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-
+import os
+from pathlib import Path
 from decouple import config
 import dj_database_url
-from pathlib import Path
-import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,15 +31,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 
+# Load local .env if present (development)
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+
+
+SECRET_KEY = config('SECRET_KEY', default=os.environ.get('SECRET_KEY', 'dev-secret-key'))
+DEBUG = config('DEBUG', default=os.environ.get('DEBUG', 'False'), cast=bool)
 
 
 
+# ALLOWED_HOSTS - comma separated in .env
+_allowed = config('ALLOWED_HOSTS', default=os.environ.get('ALLOWED_HOSTS', ''))
+ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()] or ['localhost', '127.0.0.1']
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key')
-
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-
-ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -91,9 +95,10 @@ WSGI_APPLICATION = 'posts.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Database from DATABASE_URL or fallback to sqlite
 DATABASES = {
     'default': dj_database_url.parse(
-        config('DATABASE_URL', default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
+        config('DATABASE_URL', default=os.environ.get('DATABASE_URL', f"sqlite:///{BASE_DIR / 'db.sqlite3'}")),
         conn_max_age=600
     )
 }
@@ -152,11 +157,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 
-
-# Static
+# Static settings (WhiteNoise)
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [ BASE_DIR / 'static' ]         # if you place your own assets here
-STATIC_ROOT = BASE_DIR / 'staticfiles'             # collectstatic will dump here
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media
 MEDIA_URL = '/media/'
@@ -164,10 +169,11 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Email settings
 
 
-EMAIL_BACKEND    = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST       = 'smtp.gmail.com'
-EMAIL_PORT       = 587
-EMAIL_USE_TLS    = True
-EMAIL_HOST_USER  = 'p06099124@gmail.com'
-EMAIL_HOST_PASSWORD = 'gfwu thii gsiz tpmu'
-DEFAULT_FROM_EMAIL  = EMAIL_HOST_USER
+# Email settings from environment (no hard-coded values)
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
